@@ -78,9 +78,6 @@ def simulate_rolling_shutter(
 	src_fps = float(props["fps"])
 	src_frames = int(props["frames"])
 
-	if src_fps <= 0:
-		raise ValueError("Source video FPS must be > 0")
-
 	if config.exposure_samples < 1:
 		raise ValueError("exposure_samples must be >= 1")
 
