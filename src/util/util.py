@@ -1,9 +1,9 @@
 import cv2
 
 # Returns a VideoCapture object for the given video path
-def load_video(path="resources/video.mp4") -> cv2.VideoCapture:
-    vid = cv2.VideoCapture(path
-                           )
+def load_video(path="resources/video.mp4") -> cv2.VideoCapture | None:
+    vid = cv2.VideoCapture(path)
+
     if not vid.isOpened():
         print("Error opening video stream or file")
         return None
