@@ -17,6 +17,7 @@ class RollingShutterConfig:
 	exposure_samples: int = 3
 	output_frames: int = 1
 	start_time_s: float = 0.0
+	source_fps: float = 48000
 
 
 def _normalize_kernel(kernel: np.ndarray) -> np.ndarray:
@@ -35,9 +36,43 @@ def build_gaussian_psf(kernel_size: int = 31, sigma: float = 4.0) -> np.ndarray:
 	return _normalize_kernel(kernel)
 
 
-def load_psf(psf_path: str | None = None, kernel_size: int = 31, sigma: float = 4.0) -> np.ndarray:
+def build_anisotropic_gaussian_psf(
+	kernel_size_x: int = 31,
+	kernel_size_y: int = 31,
+	sigma_x: float = 4.0,
+	sigma_y: float = 4.0,
+) -> np.ndarray:
+	if kernel_size_x % 2 == 0:
+		kernel_size_x += 1
+	if kernel_size_y % 2 == 0:
+		kernel_size_y += 1
+	gx = cv2.getGaussianKernel(kernel_size_x, sigma_x)
+	gy = cv2.getGaussianKernel(kernel_size_y, sigma_y)
+	kernel = gy @ gx.T
+	return _normalize_kernel(kernel)
+
+
+def load_psf(
+	psf_path: str | None = None,
+	kernel_size: int = 31,
+	sigma: float = 4.0,
+	kernel_size_x: int | None = None,
+	kernel_size_y: int | None = None,
+	sigma_x: float | None = None,
+	sigma_y: float | None = None,
+) -> np.ndarray:
 	if psf_path is None:
-		return build_gaussian_psf(kernel_size=kernel_size, sigma=sigma)
+		kx = kernel_size if kernel_size_x is None else kernel_size_x
+		ky = kernel_size if kernel_size_y is None else kernel_size_y
+		sx = sigma if sigma_x is None else sigma_x
+		sy = sigma if sigma_y is None else sigma_y
+		print(f"Kernel sizes: kx={kx}, ky={ky}, sigma_x={sx}, sigma_y={sy}")
+		return build_anisotropic_gaussian_psf(
+			kernel_size_x=kx,
+			kernel_size_y=ky,
+			sigma_x=sx,
+			sigma_y=sy,
+		)
 
 	psf = cv2.imread(psf_path, cv2.IMREAD_GRAYSCALE)
 	if psf is None:
@@ -67,6 +102,10 @@ def simulate_rolling_shutter(
 	psf_path: str | None = None,
 	gaussian_kernel_size: int = 31,
 	gaussian_sigma: float = 4.0,
+	gaussian_kernel_size_x: int | None = None,
+	gaussian_kernel_size_y: int | None = None,
+	gaussian_sigma_x: float | None = None,
+	gaussian_sigma_y: float | None = None,
 ) -> list[str]:
 	cap = load_video(video_path)
 	if cap is None:
@@ -76,12 +115,22 @@ def simulate_rolling_shutter(
 	width = props["width"]
 	height = props["height"]
 	src_fps = float(props["fps"])
+	if config.source_fps is not None:
+		src_fps = float(config.source_fps)
 	src_frames = int(props["frames"])
 
 	if config.exposure_samples < 1:
 		raise ValueError("exposure_samples must be >= 1")
 
-	psf_kernel = load_psf(psf_path, kernel_size=gaussian_kernel_size, sigma=gaussian_sigma)
+	psf_kernel = load_psf(
+		psf_path,
+		kernel_size=gaussian_kernel_size,
+		sigma=gaussian_sigma,
+		kernel_size_x=gaussian_kernel_size_x,
+		kernel_size_y=gaussian_kernel_size_y,
+		sigma_x=gaussian_sigma_x,
+		sigma_y=gaussian_sigma_y,
+	)
 
 	readout_s = config.readout_time_ms / 1000.0
 	exposure_s = config.exposure_time_ms / 1000.0

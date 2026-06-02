@@ -42,6 +42,36 @@ def parse_args() -> argparse.Namespace:
 	parser.add_argument("--start-time", type=float, default=0.0)
 	parser.add_argument("--gaussian-kernel", type=int, default=31)
 	parser.add_argument("--gaussian-sigma", type=float, default=4.0)
+	parser.add_argument(
+		"--gaussian-kernel-x",
+		type=int,
+		default=None,
+		help="Optional Gaussian PSF kernel width in pixels.",
+	)
+	parser.add_argument(
+		"--gaussian-kernel-y",
+		type=int,
+		default=None,
+		help="Optional Gaussian PSF kernel height in pixels.",
+	)
+	parser.add_argument(
+		"--gaussian-sigma-x",
+		type=float,
+		default=None,
+		help="Optional Gaussian PSF sigma along x (pixels).",
+	)
+	parser.add_argument(
+		"--gaussian-sigma-y",
+		type=float,
+		default=None,
+		help="Optional Gaussian PSF sigma along y (pixels).",
+	)
+	parser.add_argument(
+		"--source-fps",
+		type=float,
+		default=None,
+		help="Override source video FPS used for temporal sampling (e.g., 48000).",
+	)
 	return parser.parse_args()
 
 
@@ -55,6 +85,7 @@ def main() -> None:
 		exposure_samples=args.samples,
 		output_frames=args.frames,
 		start_time_s=args.start_time,
+		source_fps=args.source_fps,
 	)
 
 	outputs = simulate_rolling_shutter(
@@ -64,6 +95,10 @@ def main() -> None:
 		psf_path=args.psf_image,
 		gaussian_kernel_size=args.gaussian_kernel,
 		gaussian_sigma=args.gaussian_sigma,
+		gaussian_kernel_size_x=args.gaussian_kernel_x,
+		gaussian_kernel_size_y=args.gaussian_kernel_y,
+		gaussian_sigma_x=args.gaussian_sigma_x,
+		gaussian_sigma_y=args.gaussian_sigma_y,
 	)
 
 	print("Wrote RS simulated frame(s):")
